@@ -2,9 +2,11 @@
 #include "config.h"
 #include "lemlib/api.hpp" // IWYU pragma: keep
 #include "lemlib/chassis/trackingWheel.hpp"
-#include "robodash/views/selector.hpp"
+#include "pros/adi.hpp"
+#include "pros/misc.h"
+#include "selector.h"
 
-ASSET(pureppuresuit_testpath_txt);
+// ASSET(pureppuresuit_testpath_txt);
 pros::MotorGroup left_motor_group(config::left_motors, pros::MotorGears::blue);
 pros::MotorGroup right_motor_group(config::right_motors,
                                    pros::MotorGears::blue);
@@ -18,11 +20,6 @@ pros::Imu imu(config::imu);
 pros::Rotation horizontal_encoder(config::horizontal_encoder);
 pros::Rotation vertical_encoder(config::vertical_encoder);
 
-// horizontal tracking wheel
-lemlib::TrackingWheel horizontal_tracking_wheel(&horizontal_encoder,
-                                                lemlib::Omniwheel::NEW_2,
-                                                config::horizontalOffset);
-
 // vertical tracking wheel
 lemlib::TrackingWheel vertical_tracking_wheel(&vertical_encoder,
                                               lemlib::Omniwheel::NEW_2,
@@ -31,7 +28,7 @@ lemlib::TrackingWheel vertical_tracking_wheel(&vertical_encoder,
 lemlib::OdomSensors
     sensors(&vertical_tracking_wheel,   // vertical tracking wheel 1
             nullptr,                    // vertical tracking wheel 2
-            &horizontal_tracking_wheel, // horizontal tracking wheel 1
+            nullptr, // horizontal tracking wheel 1
             nullptr,                    // horizontal tracking wheel 2
             &imu);
 
@@ -62,42 +59,59 @@ lemlib::ExpoDriveCurve
 lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller,
                         sensors);
 
-// Color hue is an the hue value in HSV using (X, 75, 80), -1 is default color (white)
-rd::Selector::routine_t blueAuton1 = {"Blue 1", nullptr, "", 220};
-rd::Selector::routine_t blueAuton2 = {"Blue 2", nullptr, "", 230};
-rd::Selector::routine_t blueAuton3 = {"Blue 3", nullptr, "", 240};
+pros::Motor intake_motor(config::intakeMotor);
+pros::Motor indexer(config::indexer);
+pros::Motor indexer2(config::indexer2);
+pros::adi::DigitalOut matchLoader1('A');
+pros::adi::DigitalOut matchLoader2('C');
+pros::adi::DigitalOut descore('F');
 
-rd::Selector::routine_t redAuton1 = {"Red 1", nullptr, "", 0};
-rd::Selector::routine_t redAuton2 = {"Red 2", nullptr, "", 5};
-rd::Selector::routine_t redAuton3 = {"Red 3", nullptr, "", 10};
-
-rd::Selector::routine_t skillsAuton = {"Skills", nullptr, "", 120};
-rd::Selector::routine_t testAuton = {"Test", nullptr, "", 60};
-
-rd::Selector selector({
-    blueAuton1, blueAuton2, blueAuton3, redAuton1, redAuton2, redAuton3, skillsAuton, testAuton
-});
-
-rd::Console console;
+bool matchLoaderToggle = false;
+bool descoreToggle = false;
 
 void initialize() {
+  left_motor_group.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+  right_motor_group.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
   pros::lcd::initialize();
   chassis.calibrate();
+	selector::init();
 
-  pros::Task screen_task([&]() {
-    while (true) {
-      console.printf("X: %f, Y: %f, Theta: %f \n", chassis.getPose().x,
-                     chassis.getPose().y, chassis.getPose().theta);
-      pros::delay(100);
-    }
-  });
+  // pros::Task screen_task([&]() {
+  //   while (true) {
+  //     console.printf("X: %f, Y: %f, Theta: %f \n", chassis.getPose().x,
+  //                    chassis.getPose().y, chassis.getPose().theta);
+  //     pros::delay(100);
+  //   }
+  // });
 }
 
 void disabled() {}
 
 void competition_initialize() {}
 
-void autonomous() { selector.run_auton(); }
+void autonomous() { 
+  switch(selector::auton) {
+      case 1: // Blue 1
+        chassis.setPose(-48,-48,90);
+        chassis.moveToPose(-24, -48, 90, 15000);
+        chassis.turnToHeading(0, 15000);
+        break; // Blue 2
+      case 2:
+        break;
+      case 3:
+        break;
+      case -1:
+        break;
+      case -2 :
+        break;
+      case -3:
+        break;
+      case 0:
+        break;
+      default:
+        break;
+  }
+}
 
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 void opcontrol() {
@@ -105,11 +119,45 @@ void opcontrol() {
     int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
     int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
     chassis.curvature(leftY, rightX);
+
+    indexer.move_voltage(0);
+    intake_motor.move_voltage(0);
+
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) { // Intake
+      intake_motor.move_voltage(12000);
+      indexer.move_voltage(-12000);
+    }
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) { // Low score/outtake
+      intake_motor.move_voltage(-12000);
+      indexer.move_voltage(12000);
+    }
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) { // High score
+      intake_motor.move_voltage(12000);
+      indexer.move_voltage(-12000);
+      indexer2.move_voltage(12000);
+    }
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) { // Middle Score
+      intake_motor.move_voltage(12000);
+      indexer.move_voltage(-12000);
+      indexer2.move_voltage(-12000);
+    }
+
+    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
+      matchLoaderToggle = !matchLoaderToggle;
+    }
+    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {
+      descoreToggle = !descoreToggle;
+    }
+
+    matchLoader1.set_value(matchLoaderToggle);
+    matchLoader2.set_value(matchLoaderToggle);
+    descore.set_value(descoreToggle);
+
     pros::delay(25);
   }
 }
 
 void testAutonFunc() {
-	chassis.setPose(-48,-48,90);
-	chassis.follow(pureppuresuit_testpath_txt, 5, 15000); // inch, ms
+	// chassis.setPose(-48,-48,90);
+	// chassis.follow(pureppuresuit_testpath_txt, 5, 15000); // inch, ms
 }
