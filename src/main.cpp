@@ -6,7 +6,7 @@
 #include "pros/misc.h"
 #include "selector.h"
 
-// ASSET(pureppuresuit_testpath_txt);
+ASSET(test_txt);
 pros::MotorGroup left_motor_group(config::left_motors, pros::MotorGears::blue);
 pros::MotorGroup right_motor_group(config::right_motors,
                                    pros::MotorGears::blue);
@@ -92,9 +92,11 @@ void competition_initialize() {}
 void autonomous() { 
   switch(selector::auton) {
       case 1: // Blue 1
-        chassis.setPose(-48,-48,90);
-        chassis.moveToPose(-24, -48, 90, 15000);
+        chassis.setPose(-66,-36,90);
+        chassis.follow(test_txt, 5, 15000);
         chassis.turnToHeading(0, 15000);
+        // chassis.moveToPose(-24, -48, 90, 15000);
+        // chassis.turnToHeading(0, 15000);
         break; // Blue 2
       case 2:
         break;
@@ -121,17 +123,21 @@ void opcontrol() {
     chassis.curvature(leftY, rightX);
 
     indexer.move_voltage(0);
+    indexer2.move_voltage(0);
     intake_motor.move_voltage(0);
 
     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) { // Intake
+      descoreToggle = true;
       intake_motor.move_voltage(12000);
       indexer.move_voltage(-12000);
+      indexer2.move_voltage(12000);
     }
     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) { // Low score/outtake
       intake_motor.move_voltage(-12000);
       indexer.move_voltage(12000);
     }
     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) { // High score
+      descoreToggle = false;
       intake_motor.move_voltage(12000);
       indexer.move_voltage(-12000);
       indexer2.move_voltage(12000);

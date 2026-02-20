@@ -97,8 +97,8 @@ namespace selector {
         lv_tabview_set_tab_bar_position(tabView, LV_DIR_TOP);
         lv_tabview_set_tab_bar_size(tabView, 40);
 
-        lv_obj_t *redTab   = lv_tabview_add_tab(tabView, "Close");
-        lv_obj_t *blueTab  = lv_tabview_add_tab(tabView, "Far");
+        lv_obj_t *redTab   = lv_tabview_add_tab(tabView, "Red");
+        lv_obj_t *blueTab  = lv_tabview_add_tab(tabView, "Blue");
         lv_obj_t *skillsTab = lv_tabview_add_tab(tabView, "Skills");
 
         if (auton < 0) {
