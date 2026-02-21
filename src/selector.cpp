@@ -28,7 +28,6 @@ namespace selector {
         auton = auton - 1;
         lv_label_set_text(blueBtnLabel, btnMapBlue[abs(auton) - 1]);
         lv_obj_remove_state(blueBtn, LV_STATE_PRESSED);
-        printf("%d \n", auton);
     }
 
     static void skillsBtnAction(lv_event_t *e) {

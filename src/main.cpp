@@ -6,7 +6,7 @@
 #include "pros/misc.h"
 #include "selector.h"
 
-ASSET(test_txt);
+ASSET(skills_path1_txt);
 pros::MotorGroup left_motor_group(config::left_motors, pros::MotorGears::blue);
 pros::MotorGroup right_motor_group(config::right_motors,
                                    pros::MotorGears::blue);
@@ -89,26 +89,108 @@ void disabled() {}
 
 void competition_initialize() {}
 
+void intake() {
+  setDescore(true);
+  intake_motor.move_voltage(12000);
+  indexer.move_voltage(-12000);
+  indexer2.move_voltage(12000);
+}
+
+void stopMotors(){
+  intake_motor.move_voltage(0);
+  indexer.move_voltage(0);
+  indexer2.move_voltage(0);
+}
+
+void lowScore(){
+  intake_motor.move_voltage(-12000);
+  indexer.move_voltage(12000);
+}
+
+void highScore(){
+  descoreToggle = false;
+  intake_motor.move_voltage(12000);
+  indexer.move_voltage(-12000);
+  indexer2.move_voltage(12000);
+}
+
+void middleScore(){
+  intake_motor.move_voltage(12000);
+  indexer.move_voltage(-12000);
+  indexer2.move_voltage(-12000);
+}
+
+void setMatchLoader(bool state){
+  matchLoader1.set_value(state);
+  matchLoader2.set_value(state);
+}
+
+void setDescore(bool state){
+  descore.set_value(state);
+}
+
+
 void autonomous() { 
   switch(selector::auton) {
       case 1: // Blue 1
-        chassis.setPose(-66,-36,90);
-        chassis.follow(test_txt, 5, 15000);
-        chassis.turnToHeading(0, 15000);
-        // chassis.moveToPose(-24, -48, 90, 15000);
-        // chassis.turnToHeading(0, 15000);
-        break; // Blue 2
-      case 2:
+        break;
+      case 2: // Blue 2
         break;
       case 3:
         break;
-      case -1:
+      case -1: // Red 1
         break;
-      case -2 :
+      case -2:
         break;
       case -3:
         break;
-      case 0:
+      case 0: // Skills
+
+        int matchLoadTime = 5000;
+        int highScoreTime = 5000;
+
+        chassis.setPose(47.25, 0, 90, 2000);
+        chassis.moveToPose(-48, -48, 270, 2000); // Getting Ready to Load
+        intake();
+        setMatchLoader(true);
+        pros::delay(200);
+        chassis.moveToPose(-64, -48, 270, 2000);
+        pros::delay(matchLoadTime); //wait for matchload
+        setMatchLoader(false);
+        pros::delay(200);
+        chassis.moveToPose(-39, -60, 90, 2000);
+        stopMotors();
+        chassis.moveToPose(27, -60, 45, 2000);
+        chassis.moveToPose(38, -52, 315, 2000);
+        chassis.moveToPose(27, -48, 270, 2000); //highScore 
+        highScore();
+        pros::delay(highScoreTime);
+        setMatchLoader(true); //ready to load
+        pros::delay(200);
+        chassis.moveToPose(62, -48, 90, 2000); //matchload
+        pros::delay(matchLoadTime); 
+        setMatchLoader(false);
+        pros::delay(200);
+        chassis.moveToPose(27, -48, 270, 2000); //highScore
+        highScore();
+        pros::delay(highScoreTime);
+        stopMotors();
+        chassis.moveToPose(24, -36, 0, 2000, {.maxSpeed=90}); //before approaching balls
+        intake();
+        chassis.turnToHeading(0, 2000);
+        chassis.moveToPose(24, -24, 0, 2000, {.maxSpeed=90});
+        setMatchLoader(true); //catch balls on floor
+        pros::delay(200);
+        setMatchLoader(false);
+        pros::delay(200);
+        chassis.moveToPose(24, 12, 0, 2000, {.maxSpeed=90});
+        chassis.moveToPose(24, 24, 0, 2000, {.maxSpeed=90});
+        setMatchLoader(true); //catch balls on floor
+        pros::delay(200);
+        chassis.moveToPose(35, 48, 270, 2000);
+        highScore();
+
+
         break;
       default:
         break;
